@@ -4,7 +4,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_REPO = 'tsemb/java-maven-app'
+        DOCKER_REPO = 'tsemb/demo-app'
         DOCKER_REPO_SERVER = 'docker.io'
     }
 

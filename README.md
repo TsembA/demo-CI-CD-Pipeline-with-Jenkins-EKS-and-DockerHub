@@ -121,9 +121,3 @@ This project demonstrates a full **CI/CD pipeline** for deploying a Java Maven a
 
 * Run `kubectl get all` to verify running pods and services
 * Access app via the EKS LoadBalancer external IP
-
----
-
-## 📚 Module Reference
-
-This project corresponds to **Module 11: Kubernetes on AWS – EKS** and demonstrates practical implementation of CI/CD principles with cloud-native tooling.

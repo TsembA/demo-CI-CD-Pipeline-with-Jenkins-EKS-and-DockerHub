@@ -26,6 +26,7 @@ pipeline {
                 }
             }
         }
+
         stage('build app') {
             steps {
                 script {
@@ -34,6 +35,7 @@ pipeline {
                 }
             }
         }
+
         stage('build image') {
             steps {
                 script {
@@ -46,7 +48,8 @@ pipeline {
                 }
             }
         }
-        stage('deploy') {
+
+        stage('deploy to K8s EKS') {
             environment {
                 AWS_ACCESS_KEY_ID = credentials('aws_access_key_id')
                 AWS_SECRET_ACCESS_KEY = credentials('aws_secret_access_key')
@@ -60,14 +63,17 @@ pipeline {
                 }
             }
         }
+
         stage('commit version update') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
-                        sh "git remote set-url origin https://${USER}:${PASS}@github.com/TsembA/CI-CD-Pipeline-with-Jenkins-EKS-and-DockerHub.git"
-                        sh 'git add .'
-                        sh 'git commit -m \"ci: version bump\"'
-                        sh 'git push origin HEAD:master'
+                        sh '''
+                            git remote set-url origin https://$USER:$PASS@github.com/TsembA/CI-CD-Pipeline-with-Jenkins-EKS-and-DockerHub.git
+                            git add .
+                            git commit -m "ci: version bump"
+                            git push origin HEAD:master
+                        '''
                     }
                 }
             }

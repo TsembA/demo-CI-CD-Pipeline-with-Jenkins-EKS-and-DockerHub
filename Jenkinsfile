@@ -2,9 +2,16 @@
 
 pipeline {
     agent any
+
+    environment {
+        DOCKER_REPO = 'tsemb/java-maven-app'
+        DOCKER_REPO_SERVER = 'docker.io'
+    }
+
     tools {
         maven 'Maven'
     }
+
     stages {
         stage('increment version') {
             steps {
@@ -31,7 +38,7 @@ pipeline {
             steps {
                 script {
                     echo "building the docker image..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                         sh "docker build -t ${DOCKER_REPO}:${IMAGE_NAME} ."
                         sh 'echo $PASS | docker login -u $USER --password-stdin ${DOCKER_REPO_SERVER}'
                         sh "docker push ${DOCKER_REPO}:${IMAGE_NAME}"
@@ -48,18 +55,18 @@ pipeline {
             steps {
                 script {
                     echo 'deploying docker image...'
-                    sh 'envsubst < kubernetes/deployment.yaml | kubectl apply -f  '
-                    sh 'envsubst < kubernetes/service.yaml | kubectl apply -f  '
+                    sh 'envsubst < kubernetes/deployment.yaml | kubectl apply -f -'
+                    sh 'envsubst < kubernetes/service.yaml | kubectl apply -f -'
                 }
             }
         }
         stage('commit version update') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                         sh "git remote set-url origin https://${USER}:${PASS}@github.com/TsembA/CI-CD-Pipeline-with-Jenkins-EKS-and-DockerHub.git"
                         sh 'git add .'
-                        sh 'git commit -m "ci: version bump"'
+                        sh 'git commit -m \"ci: version bump\"'
                         sh 'git push origin HEAD:master'
                     }
                 }

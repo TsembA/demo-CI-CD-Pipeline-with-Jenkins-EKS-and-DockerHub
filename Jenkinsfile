@@ -31,7 +31,7 @@ pipeline {
             steps {
                 script {
                     echo "building the docker image..."
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
                         sh "docker build -t ${DOCKER_REPO}:${IMAGE_NAME} ."
                         sh 'echo $PASS | docker login -u $USER --password-stdin ${DOCKER_REPO_SERVER}'
                         sh "docker push ${DOCKER_REPO}:${IMAGE_NAME}"
@@ -40,20 +40,27 @@ pipeline {
             }
         }
         stage('deploy') {
+            environment {
+                AWS_ACCESS_KEY_ID = credentials('aws_access_key_id')
+                AWS_SECRET_ACCESS_KEY = credentials('aws_secret_access_key')
+                APP_NAME = 'java-maven-app'
+            }
             steps {
                 script {
-                   echo 'deploying docker image...'
+                    echo 'deploying docker image...'
+                    sh 'envsubst < kubernetes/deployment.yaml | kubectl apply -f  '
+                    sh 'envsubst < kubernetes/service.yaml | kubectl apply -f  '
                 }
             }
         }
-        stage('commit version update'){
+        stage('commit version update') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'gitlab-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh "git remote set-url origin https://${USER}:${PASS}@gitlab.com/twn-devops-bootcamp/latest/11-eks/java-maven-app.git"
+                    withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                        sh "git remote set-url origin https://${USER}:${PASS}@github.com/TsembA/CI-CD-Pipeline-with-Jenkins-EKS-and-DockerHub.git"
                         sh 'git add .'
                         sh 'git commit -m "ci: version bump"'
-                        sh 'git push origin HEAD:jenkins-jobs'
+                        sh 'git push origin HEAD:master'
                     }
                 }
             }

@@ -90,7 +90,7 @@ docker build -t tsemb/java-maven-app:1.0.3-25 .
 
 ## 🌐 Deployment Target
 
-* Kubernetes EKS cluster
+* Kubernetes EKS cluster EKS
 * Assumes proper `kubeconfig` is already configured in Jenkins (or through `withKubeConfig` if using Linode)
 * Kubernetes manifests are dynamically templated using `envsubst`
 

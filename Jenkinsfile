@@ -69,6 +69,8 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
                         sh '''
+                            git config user.name "Arno"
+                            git config user.email "arno@example.com"
                             git remote set-url origin https://$USER:$PASS@github.com/TsembA/CI-CD-Pipeline-with-Jenkins-EKS-and-DockerHub.git
                             git add .
                             git commit -m "ci: version bump"

@@ -64,6 +64,24 @@ docker build -t tsemb/java-maven-app:1.0.3-25 .
 
 📌 Required variables like `IMAGE_NAME` and `APP_NAME` are substituted into the templates before deployment.
 
+🔐 If you're using a **private Docker Hub registry**, Kubernetes needs credentials to pull the image. You must create a Kubernetes secret of type `docker-registry` and reference it in your Deployment YAML like this:
+
+```bash
+kubectl create secret docker-registry regcred \
+  --docker-username=your_dockerhub_username \
+  --docker-password=your_dockerhub_password \
+  --docker-email=your_email@example.com
+```
+
+In your deployment spec:
+
+```yaml
+imagePullSecrets:
+  - name: regcred
+```
+
+This allows Kubernetes to authenticate and pull the private image from Docker Hub.
+
 ---
 
 ### ✅ 5. **Stage: `commit version update`**
@@ -90,7 +108,7 @@ docker build -t tsemb/java-maven-app:1.0.3-25 .
 
 ## 🌐 Deployment Target
 
-* Kubernetes EKS cluster EKS
+* Kubernetes cluster EKS or LKE
 * Assumes proper `kubeconfig` is already configured in Jenkins (or through `withKubeConfig` if using Linode)
 * Kubernetes manifests are dynamically templated using `envsubst`
 

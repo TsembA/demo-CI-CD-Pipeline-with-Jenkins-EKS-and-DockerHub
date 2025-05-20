@@ -1,4 +1,4 @@
-# 🚀 Demo Project: Complete CI/CD Pipeline with EKS & Private DockerHub Registry
+# 🚀 Demo Project: Complete CI/CD Pipeline with EKS & Private Docker Hub Registry
 
 ## 🔧 Technologies Used
 
@@ -77,6 +77,50 @@ This project demonstrates a full **CI/CD pipeline** for deploying a Java Maven a
 | `build image`           | CI   | Build Docker image and push to Docker Hub (private)       |
 | `deploy to K8s EKS`     | CD   | Deploy new Docker image to AWS EKS via dynamic manifests  |
 | `commit version update` | CD   | Push updated `pom.xml` with bumped version back to GitHub |
+
+---
+
+## 📒 Step-by-Step Execution Guide
+
+### 1. Prepare Jenkins Environment
+
+* Install required plugins: Pipeline, Git, Docker, Kubernetes CLI.
+* Install tools in container: Docker, kubectl, aws CLI, aws-iam-authenticator.
+* Configure credentials:
+
+  * Docker Hub: `docker-hub-credentials`
+  * GitHub PAT: `github-credentials`
+  * AWS IAM: `aws_access_key_id` / `aws_secret_access_key`
+
+### 2. Configure Kubernetes Access
+
+* Create an EKS cluster using `eksctl` and generate the kubeconfig.
+* Copy kubeconfig into `/var/jenkins_home/.kube/config` inside Jenkins container.
+* (Optional) Create `imagePullSecrets` for private Docker registry access.
+
+### 3. Prepare Application Repository
+
+* Java Maven project with `pom.xml`
+* Dockerfile
+* Kubernetes YAML files:
+
+  * `kubernetes/deployment.yaml`
+  * `kubernetes/service.yaml`
+* `Jenkinsfile` in root directory with defined pipeline logic.
+
+### 4. Pipeline Execution Flow
+
+1. Jenkins pulls source from GitHub.
+2. `increment version`: Maven updates version in `pom.xml`
+3. `build app`: Builds `.jar` file
+4. `build image`: Builds and pushes image to Docker Hub
+5. `deploy to K8s EKS`: Uses `kubectl` to apply YAMLs to EKS
+6. `commit version update`: Commits updated `pom.xml` to GitHub
+
+### 5. Validate Deployment
+
+* Run `kubectl get all` to verify running pods and services
+* Access app via the EKS LoadBalancer external IP
 
 ---
 

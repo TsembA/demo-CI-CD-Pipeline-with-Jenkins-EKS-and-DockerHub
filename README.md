@@ -1,125 +1,85 @@
-# 🚀 CI/CD Pipeline: Java Maven App to Amazon EKS
+# 🚀 Demo Project: Complete CI/CD Pipeline with EKS & Private DockerHub Registry
 
-This project implements a full CI/CD pipeline that:
+## 🔧 Technologies Used
 
-* Builds a Java Maven application
-* Builds and pushes a Docker image to Docker Hub
-* Deploys the application to a Kubernetes cluster (EKS)
-* Commits version updates back to the GitHub repository
-
-All automation is handled through a declarative Jenkins pipeline using Groovy.
-
----
-
-## 📁 Pipeline Breakdown
-
-### ✅ 1. **Stage: `increment version`**
-
-* Uses `maven-build-helper` and `versions:set` to increment the application version automatically.
-* Extracts the new version from `pom.xml`.
-* Stores the version and Jenkins build number in an environment variable `IMAGE_NAME`.
-
-📌 **Example Result:**
-
-```bash
-IMAGE_NAME = 1.0.3-25
-```
+* **CI/CD**: Jenkins, Groovy (Declarative Pipeline)
+* **Containerization**: Docker, Docker Hub (private registry)
+* **Orchestration**: Kubernetes (Amazon EKS)
+* **Build Tools**: Java, Maven
+* **Infrastructure**: AWS IAM, kubectl, AWS CLI
+* **VCS**: GitHub
+* **OS**: Linux (Jenkins container environment)
 
 ---
 
-### ✅ 2. **Stage: `build app`**
+## 📦 Project Overview
 
-* Executes Maven clean and package:
-
-```bash
-mvn clean package
-```
-
-* Compiles and packages the Java app into a JAR or WAR file.
+This project demonstrates a full **CI/CD pipeline** for deploying a Java Maven application into a **Kubernetes cluster (EKS)** using Jenkins and Docker Hub as a private container registry. The pipeline automates everything from version bumping, building, image publishing, to production deployment and Git commit syncing.
 
 ---
 
-### ✅ 3. **Stage: `build image`**
+## 📜 CI/CD Pipeline Breakdown
 
-* Builds a Docker image using the previously generated artifact.
-* Uses Jenkins credentials (`docker-hub-credentials`) to log into Docker Hub securely.
-* Tags the image with `DOCKER_REPO:IMAGE_NAME` and pushes it to Docker Hub.
+### ✅ CI Stages
 
-📌 Example:
+1. **Increment Version**
 
-```bash
-docker build -t tsemb/java-maven-app:1.0.3-25 .
-```
+   * Automatically bumps the semantic version of the application in `pom.xml` using `maven-build-helper` and `versions:set`.
+   * Sets a version tag combining Maven version and Jenkins build number (e.g. `1.1.12-9`).
 
----
+2. **Build Artifact**
 
-### ✅ 4. **Stage: `deploy`**
+   * Uses Maven to compile the Java application and package it into a `.jar` file.
 
-* Uses AWS credentials to authenticate against EKS (or any Kubernetes cluster).
-* Uses `envsubst` to replace environment variables in Kubernetes YAML templates:
+3. **Build & Push Docker Image**
 
-  * `kubernetes/deployment.yaml`
-  * `kubernetes/service.yaml`
-* Applies the manifest files using `kubectl apply`.
+   * Docker image is built from the compiled artifact.
+   * Image is tagged and pushed to a **private Docker Hub** repository using Jenkins credentials.
 
-📌 Required variables like `IMAGE_NAME` and `APP_NAME` are substituted into the templates before deployment.
+### ✅ CD Stages
 
-🔐 If you're using a **private Docker Hub registry**, Kubernetes needs credentials to pull the image. You must create a Kubernetes secret of type `docker-registry` and reference it in your Deployment YAML like this:
+4. **Deploy to Amazon EKS**
 
-```bash
-kubectl create secret docker-registry regcred \
-  --docker-username=your_dockerhub_username \
-  --docker-password=your_dockerhub_password \
-  --docker-email=your_email@example.com
-```
+   * Uses `envsubst` to dynamically inject variables into Kubernetes YAML manifests (`deployment.yaml` and `service.yaml`).
+   * Applies the manifests using `kubectl`, deploying the latest image to the EKS cluster.
+   * Assumes valid `kubeconfig` is available in the Jenkins container with IAM-authenticated access.
 
-In your deployment spec:
+5. **Commit Version Update**
 
-```yaml
-imagePullSecrets:
-  - name: regcred
-```
-
-This allows Kubernetes to authenticate and pull the private image from Docker Hub.
+   * Updates `pom.xml` with the new version.
+   * Commits the change back to the GitHub repository using a GitHub Personal Access Token (PAT).
+   * Configures Git author identity in the Jenkins job before committing.
 
 ---
 
-### ✅ 5. **Stage: `commit version update`**
+## 🔐 Authentication & Security
 
-* Uses `github-credentials` to push back the updated `pom.xml` version into the main GitHub repository.
-* Performs a standard Git workflow:
-
-  * `git add .`
-  * `git commit -m "ci: version bump"`
-  * `git push origin HEAD:master`
+* **Docker Hub**: Uses Jenkins `usernamePassword` credentials for private image registry login.
+* **GitHub**: Uses a PAT stored in Jenkins credentials for authenticated Git push.
+* **AWS**: Uses IAM credentials to authenticate and interact with the EKS cluster.
 
 ---
 
-## 🔐 Security and Credential Handling
+## 📁 Kubernetes Deployment Structure
 
-* Uses `withCredentials()` to securely access:
-
-  * Docker Hub credentials (`docker-hub-credentials`)
-  * AWS IAM credentials (`aws_access_key_id`, `aws_secret_access_key`)
-  * GitHub token (`github-credentials`)
-* All secrets are masked and never printed in logs.
+* `kubernetes/deployment.yaml`: Defines deployment resource with `image: $DOCKER_REPO:$IMAGE_NAME`
+* `kubernetes/service.yaml`: Exposes the app using a `LoadBalancer` service (EKS-compatible)
+* Includes support for image pull secrets if using a private registry
 
 ---
 
-## 🌐 Deployment Target
+## 📌 Summary of Pipeline Stages
 
-* Kubernetes cluster EKS or LKE
-* Assumes proper `kubeconfig` is already configured in Jenkins (or through `withKubeConfig` if using Linode)
-* Kubernetes manifests are dynamically templated using `envsubst`
+| Stage Name              | Type | Description                                               |
+| ----------------------- | ---- | --------------------------------------------------------- |
+| `increment version`     | CI   | Bump application version using Maven helper plugins       |
+| `build app`             | CI   | Compile and package the Java Maven application            |
+| `build image`           | CI   | Build Docker image and push to Docker Hub (private)       |
+| `deploy to K8s EKS`     | CD   | Deploy new Docker image to AWS EKS via dynamic manifests  |
+| `commit version update` | CD   | Push updated `pom.xml` with bumped version back to GitHub |
 
 ---
 
-## 🧰 Technologies Used
+## 📚 Module Reference
 
-* **Jenkins (Groovy Pipeline)**
-* **Maven**
-* **Docker**
-* **Docker Hub**
-* **Kubernetes (EKS-compatible)**
-* **AWS IAM + kubectl**
-* **Git + GitHub**
+This project corresponds to **Module 11: Kubernetes on AWS – EKS** and demonstrates practical implementation of CI/CD principles with cloud-native tooling.
